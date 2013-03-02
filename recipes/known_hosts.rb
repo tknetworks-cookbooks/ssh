@@ -37,15 +37,14 @@ ssh_pubkeys = {}
 
 if other_hosts
   other_hosts.each do |h|
-    host = data_bag_item('ssh_known_hosts', h).to_hash
-    host['ipaddress'] ||= r.getaddress(host['fqdn'])
-    host['keys'] = {
-      'ssh' => {}
-    }
-    host['keys']['ssh']['host_rsa_public'] = host['rsa'] if host.has_key?('rsa')
-    nodes << host
-
-    addr2keys[host['ipaddress'].downcase] = host['keys']['ssh']['host_rsa_public']
+    begin
+      host = data_bag_item('ssh_known_hosts', h).to_hash
+      host['ipaddress'] ||= r.getaddress(host['fqdn'])
+      ssh_pubkeys["#{host['fqdn']},#{host['ipaddress']}"] = host['rsa']
+      addr2keys[host['ipaddress'].downcase] = host['keys']['ssh']['host_rsa_public']
+    rescue
+      Chef::Log.info("failed to get data_bag_item")
+    end
   end
 end
 
