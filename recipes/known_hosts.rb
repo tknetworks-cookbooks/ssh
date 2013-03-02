@@ -24,11 +24,7 @@ require 'resolv'
 r = Resolv.new
 nodes = []
 
-if Chef::Config[:solo]
-  Chef::Log.warn("This recipe uses search. You can add nodes via data bag")
-else
-  nodes << search(:node, "keys_ssh:* NOT name:#{node.name}")
-end
+nodes += search(:node, "keys_ssh:* NOT name:#{node.name}")
 
 begin
   other_hosts = data_bag('ssh_known_hosts')
