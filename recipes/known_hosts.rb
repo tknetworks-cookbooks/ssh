@@ -22,9 +22,13 @@
 # limitations under the License.
 require 'resolv'
 r = Resolv.new
+nodes = []
 
-nodes = search(:node, "keys_ssh:* NOT name:#{node.name}")
-nodes << node
+if Chef::Config[:solo]
+  Chef::Log.warn("This recipe uses search. You can add nodes via data bag")
+else
+  nodes << search(:node, "keys_ssh:* NOT name:#{node.name}")
+end
 
 begin
   other_hosts = data_bag('ssh_known_hosts')
@@ -86,7 +90,7 @@ node[:ssh][:known_hosts][:aliases].each_pair do |from, to|
     n = nodes.find { |_node| _node.name == to }
     if n
       Chef::Log.info("Add alias #{from} as #{to}")
-      ssh_pubkeys["#{from}"] = n['keys']['ssh']['host_rsa_public']
+      ssh_pubkeys[from] = n['keys']['ssh']['host_rsa_public']
     else
       Chef::Log.info("#{to} is not found")
     end
