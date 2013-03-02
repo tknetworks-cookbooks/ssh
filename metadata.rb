@@ -1,3 +1,4 @@
+name             "ssh"
 maintainer       "TKNetworks"
 maintainer_email "nabeken@tknetworks.org"
 license          "Apache 2.0"
