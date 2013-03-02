@@ -13,7 +13,7 @@ task :foodcritic do
 
   begin
     tags = excluded_rules.map { |r| "--tags ~#{r}" }
-    sh "foodcritic #{tags.join(" ")} --epic-fail any #{File.dirname(sandbox)}"
+    sh "foodcritic -C #{tags.join(" ")} --epic-fail any #{File.dirname(sandbox)}"
   ensure
     teardown_foodcritic_sandbox(File.join(File.dirname(__FILE__), paths.first))
   end

@@ -53,7 +53,6 @@ if other_hosts
   end
 end
 
-
 private_ipaddress_and_loopback = [
   /^10\./,
   /^172\.(?:1[6-9]|2\d|3[01])\./,
@@ -62,23 +61,23 @@ private_ipaddress_and_loopback = [
 ]
 
 nodes.each do |s|
-  s.network.interfaces.each do |int, props|
+  s['network']['interfaces'].each do |int, props|
     Chef::Log.debug("interface: #{int}, props: #{props.inspect}")
     next unless props.has_key?("addresses")
-    props[:addresses].each do |addr, addr_props|
+    props['addresses'].each do |addr, addr_props|
       Chef::Log.debug("addr: #{addr}, props: #{addr_props.inspect}")
       # remove private IPv4 and lookback addresses
       next if private_ipaddress_and_loopback.any? { |mask| mask.match(addr) }
-      if addr_props[:family] == "inet" ||
-         (addr_props[:family] == "inet6" && addr_props[:scope] == "Global")
-        ssh_pubkeys["#{s.fqdn},#{addr}"] = s[:keys][:ssh][:host_rsa_public]
-        addr2keys[addr.downcase] = s[:keys][:ssh][:host_rsa_public]
+      if addr_props['family'] == "inet" ||
+         (addr_props['family'] == "inet6" && addr_props['scope'] == "Global")
+        ssh_pubkeys["#{s['fqdn']},#{addr}"] = s['keys']['ssh']['host_rsa_public']
+        addr2keys[addr.downcase] = s['keys']['ssh']['host_rsa_public']
       end
     end
   end
 end
 
-node[:ssh][:known_hosts][:aliases].each_pair do |from, to|
+node['ssh']['known_hosts']['aliases'].each_pair do |from, to|
   if to.nil?
     r.getaddresses(from).each do |addr|
       addr.downcase!
@@ -101,7 +100,7 @@ template "/etc/ssh/ssh_known_hosts" do
   source "known_hosts.erb"
   mode 0444
   owner "root"
-  group node[:etc][:passwd][:root][:gid]
+  group node['etc']['passwd']['root']['gid']
   backup false
   variables :pubkeys => ssh_pubkeys
 end

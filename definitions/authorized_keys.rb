@@ -22,25 +22,25 @@ define :ssh_authorized_keys,
        :options => [],
        :from    => nil,
        :key     => nil do
-  raise "#{k} is required." if params[:key].nil?
+  raise "#{k} is required." if params['key'].nil?
 
-  if params[:user].nil? && params[:path].nil?
+  if params['user'].nil? && params['path'].nil?
     raise "user or path is required"
   end
-  if params[:path]
-    if params[:owner].nil? || params[:group].nil?
-      raise "owner/group is required with params[:path]"
+  if params['path']
+    if params['owner'].nil? || params['group'].nil?
+      raise "owner/group is required with params['path']"
     end
   end
 
-  if !params[:user].nil?
-    f_owner = node[:etc][:passwd][params[:user]][:uid]
-    f_group = node[:etc][:passwd][params[:user]][:gid]
-    path    = "#{node[:etc][:passwd][params[:user].to_sym][:dir]}/.ssh/authorized_keys"
+  if !params['user'].nil?
+    f_owner = node['etc']['passwd'][params['user']]['uid']
+    f_group = node['etc']['passwd'][params['user']]['gid']
+    path    = "#{node['etc']['passwd'][params['user'].to_sym]['dir']}/.ssh/authorized_keys"
   else
-    f_owner = params[:owner]
-    f_group = params[:group]
-    path    = params[:path]
+    f_owner = params['owner']
+    f_group = params['group']
+    path    = params['path']
   end
 
   directory ::File.dirname(path) do
@@ -63,12 +63,12 @@ define :ssh_authorized_keys,
         end
   end
   line = ""
-  if !params[:from].nil?
-    line += %Q[from="#{params[:from]}"]
+  if !params['from'].nil?
+    line += %Q[from="#{params['from']}"]
   end
-  if !params[:options].empty?
-    line += ",#{params[:options].join(",")} "
+  if !params['options'].empty?
+    line += ",#{params['options'].join(",")} "
   end
-  line += params[:key].strip
-  t.variables[:lines].push line
+  line += params['key'].strip
+  t.variables['lines'].push line
 end
