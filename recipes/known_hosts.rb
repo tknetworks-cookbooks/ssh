@@ -24,11 +24,7 @@ require 'resolv'
 r = Resolv.new
 nodes = []
 
-if Chef::Config[:solo]
-  Chef::Log.warn("This recipe uses search. You can add nodes via data bag")
-else
-  nodes << search(:node, "keys_ssh:* NOT name:#{node.name}")
-end
+nodes += search(:node, "keys_ssh:* NOT name:#{node.name}")
 
 begin
   other_hosts = data_bag('ssh_known_hosts')
@@ -41,18 +37,16 @@ ssh_pubkeys = {}
 
 if other_hosts
   other_hosts.each do |h|
-    host = data_bag_item('ssh_known_hosts', h).to_hash
-    host['ipaddress'] ||= r.getaddress(host['fqdn'])
-    host['keys'] = {
-      'ssh' => {}
-    }
-    host['keys']['ssh']['host_rsa_public'] = host['rsa'] if host.has_key?('rsa')
-    nodes << host
-
-    addr2keys[host['ipaddress'].downcase] = host['keys']['ssh']['host_rsa_public']
+    begin
+      host = data_bag_item('ssh_known_hosts', h).to_hash
+      host['ipaddress'] ||= r.getaddress(host['fqdn'])
+      ssh_pubkeys["#{host['fqdn']},#{host['ipaddress']}"] = host['rsa']
+      addr2keys[host['ipaddress'].downcase] = host['rsa']
+    rescue
+      Chef::Log.info("failed to get data_bag_item")
+    end
   end
 end
-
 
 private_ipaddress_and_loopback = [
   /^10\./,
@@ -62,23 +56,23 @@ private_ipaddress_and_loopback = [
 ]
 
 nodes.each do |s|
-  s.network.interfaces.each do |int, props|
+  s['network']['interfaces'].each do |int, props|
     Chef::Log.debug("interface: #{int}, props: #{props.inspect}")
     next unless props.has_key?("addresses")
-    props[:addresses].each do |addr, addr_props|
+    props['addresses'].each do |addr, addr_props|
       Chef::Log.debug("addr: #{addr}, props: #{addr_props.inspect}")
       # remove private IPv4 and lookback addresses
       next if private_ipaddress_and_loopback.any? { |mask| mask.match(addr) }
-      if addr_props[:family] == "inet" ||
-         (addr_props[:family] == "inet6" && addr_props[:scope] == "Global")
-        ssh_pubkeys["#{s.fqdn},#{addr}"] = s[:keys][:ssh][:host_rsa_public]
-        addr2keys[addr.downcase] = s[:keys][:ssh][:host_rsa_public]
+      if addr_props['family'] == "inet" ||
+         (addr_props['family'] == "inet6" && addr_props['scope'] == "Global")
+        ssh_pubkeys["#{s['fqdn']},#{addr}"] = s['keys']['ssh']['host_rsa_public']
+        addr2keys[addr.downcase] = s['keys']['ssh']['host_rsa_public']
       end
     end
   end
 end
 
-node[:ssh][:known_hosts][:aliases].each_pair do |from, to|
+node['ssh']['known_hosts']['aliases'].each_pair do |from, to|
   if to.nil?
     r.getaddresses(from).each do |addr|
       addr.downcase!
@@ -101,7 +95,7 @@ template "/etc/ssh/ssh_known_hosts" do
   source "known_hosts.erb"
   mode 0444
   owner "root"
-  group node[:etc][:passwd][:root][:gid]
+  group node['etc']['passwd']['root']['gid']
   backup false
   variables :pubkeys => ssh_pubkeys
 end

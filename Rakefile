@@ -2,6 +2,7 @@
 #
 # See http://technology.customink.com/blog/2012/06/04/mvt-foodcritic-and-travis-ci/
 #
+require 'rspec/core/rake_task'
 
 desc 'Runs foodcritic linter'
 task :foodcritic do
@@ -9,17 +10,20 @@ task :foodcritic do
   sandbox = File.join(File.dirname(__FILE__), paths)
   prepare_foodcritic_sandbox(sandbox)
 
-  excluded_rules = %w{FC015}
+  excluded_rules = %w{FC003 FC015}
 
   begin
     tags = excluded_rules.map { |r| "--tags ~#{r}" }
-    sh "foodcritic #{tags.join(" ")} --epic-fail any #{File.dirname(sandbox)}"
+    sh "foodcritic -C #{tags.join(" ")} --epic-fail any #{File.dirname(sandbox)}"
   ensure
     teardown_foodcritic_sandbox(File.join(File.dirname(__FILE__), paths.first))
   end
 end
 
-task :default => 'foodcritic'
+task :default => %w{foodcritic test}
+task :spec => :test
+
+RSpec::Core::RakeTask.new(:test)
 
 private
 
