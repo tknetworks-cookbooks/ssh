@@ -24,7 +24,9 @@ require 'resolv'
 r = Resolv.new
 nodes = []
 
-nodes += search(:node, "keys_ssh:* NOT name:#{node.name}")
+if !Chef::Config[:solo] || defined?(ChefSpec)
+  nodes += search(:node, "keys_ssh:* NOT name:#{node.name}")
+end
 
 begin
   other_hosts = data_bag('ssh_known_hosts')
