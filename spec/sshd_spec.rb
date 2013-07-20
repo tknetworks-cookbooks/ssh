@@ -34,5 +34,9 @@ describe 'ssh::sshd' do
       expect(chef_run).to enable_service 'sshd'
       expect(chef_run).to start_service 'sshd'
     end
+
+    it 'should disable password authentication' do
+      expect(chef_run).to create_file_with_content '/etc/ssh/sshd_config', 'PasswordAuthentication no'
+    end
   end
 end
