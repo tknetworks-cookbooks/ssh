@@ -41,9 +41,18 @@ if other_hosts
   other_hosts.each do |h|
     begin
       host = data_bag_item('ssh_known_hosts', h).to_hash
-      host['ipaddress'] ||= r.getaddress(host['fqdn'])
-      ssh_pubkeys["#{host['fqdn']},#{host['ipaddress']}"] = host['rsa']
-      addr2keys[host['ipaddress'].downcase] = host['rsa']
+      # if ipaddresses found
+      host['ipaddress'] ||= r.getaddresses(host['fqdn'])
+
+      if host['ipaddress'].is_a?(String)
+        ssh_pubkeys["#{host['fqdn']},#{host['ipaddress']}"] = host['rsa']
+        addr2keys[host['ipaddress'].downcase] = host['rsa']
+      else
+        host['ipaddress'].each do |ipaddr|
+          ssh_pubkeys["#{host['fqdn']},#{ipaddr}"] = host['rsa']
+          addr2keys[ipaddr.downcase] = host['rsa']
+        end
+      end
     rescue
       Chef::Log.info("failed to get data_bag_item")
     end
