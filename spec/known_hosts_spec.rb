@@ -70,7 +70,7 @@ describe 'ssh::known_hosts' do
       {
         'name' => 'chefspec2.example.org',
         'fqdn' => 'chefspec2.example.org',
-        'ipaddress' => '1.1.1.2',
+        'ipaddress' => %w{1.1.1.2},
         'keys' => {
           'ssh' => {
             'host_rsa_public' =>'chefspec2RSAKEY'
@@ -143,7 +143,7 @@ describe 'ssh::known_hosts' do
       {
         'name' => 'chefspec2.example.org',
         'fqdn' => 'chefspec2.example.org',
-        'ipaddress' => '1.1.1.2',
+        'ipaddress' => %w{1.1.1.2},
         'keys' => {
           'ssh' => {
             'host_rsa_public' =>'chefspec2RSAKEY'
@@ -184,7 +184,7 @@ describe 'ssh::known_hosts' do
         }
       }])
     Chef::Recipe.any_instance.stub(:data_bag).with('ssh_known_hosts').and_return(
-      %w{chefspec1 chefspec2})
+      %w{chefspec1 chefspec2 chefspec3})
     Chef::Recipe.any_instance.stub(:data_bag_item).with('ssh_known_hosts', 'chefspec1').and_return(
       {
         'name' => 'chefspec1.example.org',
@@ -196,9 +196,16 @@ describe 'ssh::known_hosts' do
       {
         'name' => 'chefspec2.example.org',
         'fqdn' => 'chefspec2.example.org',
-        'ipaddress' => '172.16.1.2',
+        'ipaddress' => %w{172.16.1.2 172.16.1.3},
         'rsa' =>'chefspec2RSAKEY'
       })
+    Chef::Recipe.any_instance.stub(:data_bag_item).with('ssh_known_hosts', 'chefspec3').and_return(
+      {
+        'name' => 'chefspec3.example.org',
+        'fqdn' => 'chefspec3.example.org',
+        'rsa' =>'chefspec2RSAKEY'
+      })
+    Resolv.any_instance.stub(:getaddresses).with('chefspec3.example.org').and_return(%w{1.1.1.10 1.1.1.11})
     Resolv.any_instance.stub(:getaddresses).with('chefspec1a.example.org').and_return(%w{1.1.1.1})
     chef_run.node.set['ssh']['known_hosts']['aliases']['chefspec1a.example.org'] = nil
     chef_run.node.set['ssh']['known_hosts']['aliases']['172.16.1.3'] = 'chefspec2.example.org'
@@ -209,6 +216,9 @@ describe 'ssh::known_hosts' do
       'chefspec1a.example.org,1.1.1.1 ssh-rsa chefspec1RSAKEY',
       'chefspec1.example.org,1.1.1.1 ssh-rsa chefspec1RSAKEY',
       'chefspec2.example.org,172.16.1.2 ssh-rsa chefspec2RSAKEY',
+      'chefspec2.example.org,172.16.1.3 ssh-rsa chefspec2RSAKEY',
+      'chefspec3.example.org,1.1.1.10 ssh-rsa chefspec2RSAKEY',
+      'chefspec3.example.org,1.1.1.11 ssh-rsa chefspec2RSAKEY',
       '172.16.1.3 ssh-rsa chefspec2RSAKEY'
     ].each do |l|
       chef_run.should create_file_with_content '/etc/ssh/ssh_known_hosts', l
